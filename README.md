@@ -64,10 +64,17 @@ KALAPPAI_CERT_SECRET=$(openssl rand -hex 32) bun server/index.ts
 # :8123 — POST /api/certificates, GET /api/certificates/:id, GET /certs/:id
 ```
 
-- Results are HMAC-signed at issue time; the verify endpoint re-derives the
-  signature from the stored row, so silent DB edits are detected.
-- Configure `KALAPPAI_CERT_ORIGIN` (e.g. `https://logicinczo.github.io`) for CORS,
-  `KALAPPAI_CERT_DB` for the SQLite path, `PORT` for the port.
+- Each issued certificate is **both** an HMAC-protected database record **and**
+  a W3C **Verifiable Credential** (VC 2.0 JWT proof, EdDSA) carrying an
+  **Open Badges 3.0**-shaped achievement with the learner-entered name.
+- The public verify page (`/certs/:id`) renders a QR code pointing back at
+  itself, a print button (print-ready certificate layout), and the raw VC-JWT
+  for offline verification against `/.well-known/jwks.json`.
+- Standards: OB 3.0 (1EdTech) shape, VC 2.0 (W3C), EdDSA/Ed25519 (RFC 8032).
+  Pass rules enforced server-side (accuracy ≥ 90 %, ≥ 30 s, ≥ 120 chars).
+- Configure `KALAPPAI_CERT_BASE` (public URL — it appears in QR codes and
+  credential ids), `KALAPPAI_CERT_ORIGIN` (CORS), `KALAPPAI_CERT_DB`, `PORT`.
+- Live instance: https://kalappai-cert-cashlessconsumer.zocomputer.io
 - A certificate from Kalappai is a **practice record**, not a government
   qualification — the UI says so wherever one is issued or verified.
 

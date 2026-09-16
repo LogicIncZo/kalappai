@@ -23,3 +23,7 @@ is distributed under GPL-3.0-or-later (see LICENSE), which is compatible upstrea
 
 Original code, lesson corpus, exam passage, UI and the certification server:
 © 2026 LogicInc / CashlessConsumer, GPL-3.0-or-later.
+
+## Runtime dependencies
+
+- `qrcode` (MIT) — server-side QR generation on the certificate verify page.
