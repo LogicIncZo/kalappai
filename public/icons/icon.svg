@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f1512"/>
+  <rect x="24" y="24" width="464" height="464" rx="80" fill="none" stroke="#e8a33d" stroke-width="12" opacity="0.55"/>
+  <text x="256" y="346" font-family="Noto Sans Tamil, Noto Serif Tamil" font-size="300" font-weight="600" fill="#e8a33d" text-anchor="middle">க</text>
+  <path d="M96 420 h320" stroke="#3f8f5f" stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+</svg>

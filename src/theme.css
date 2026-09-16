@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: #0d1410;
+}
+
+body {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Noto Sans Tamil",
+    sans-serif;
+}
+
+.tamil {
+  font-family: "Noto Sans Tamil", "Latha", serif;
+}
