@@ -1,0 +1,64 @@
+xkb_symbols "tam" {
+      name[Group1]= "Tamil (InScript)";
+
+      key <TLDE> { [      U0BCA, U0B92	]	};
+
+      // Mainly numbers.
+      key <AE01> { [      U0BE7 		]	};
+      key <AE02> { [      U0BE8 		]	};
+      key <AE03> { [      U0BE9 		]	};
+      key <AE04> { [      U0BEA 		]	};
+      key <AE05> { [      U0BEB 		]	};
+      key <AE06> { [      U0BEC 		]	};
+      key <AE07> { [      U0BED        	]	};
+      key <AE08> { [      U0BEE 		]	};
+      key <AE09> { [      U0BEF, parenleft	]	};
+      key <AE10> { [      U0BF0, parenright	]	};
+      key <AE11> { [      U0BF1, U0B83  ]	};
+      key <AE12> { [      U0BF2, plus	] 	};
+
+// Mainly long vowels
+
+      key <AD01> { [      U0BCC,  U0B94 ]	};
+      key <AD02> { [      U0BC8,  U0B90 ]	};
+      key <AD03> { [      U0BBE,  U0B86 ]	};
+      key <AD04> { [      U0BC0,  U0B88 ]	};
+      key <AD05> { [      U0BC2,  U0B8A ]	};
+
+// Mainly voiced consonants
+
+      key <AD07> { [      U0BB9, U0B99	]	};
+      key <AD10> { [      U0B9c 	]	};
+      key <AD12> { [      U0B9E				]	};
+
+// Mainly short vowels
+      key <AC01> { [      U0BCB,  U0B93 ]	};
+      key <AC02> { [      U0BC7,  U0B8F ]	};
+      key <AC03> { [      U0BCD,  U0B85 ]	};
+      key <AC04> { [      U0BBF,  U0B87 ]	};
+      key <AC05> { [      U0BC1,  U0B89 ]	};
+
+// Mainly unvoiced consonants
+
+      key <AC06> { [      U0BAA 		]	};
+      key <AC07> { [      U0BB0,  U0BB1 ]	};
+      key <AC08> { [      U0B95 		]	};
+      key <AC09> { [      U0BA4 		]	};
+      key <AC10> { [      U0B9A 		]	};
+      key <AC11> { [      U0B9F 		]	};
+      key <BKSL> { [      U005C, U007C	]	};//backslash-bar  - Changed to Unicode
+
+      key <AB01> { [      U0BC6,  U0B8E	]	};
+      key <AB02> { [      U0B82   		]       };
+      key <AB03> { [      U0BAE,  U0BA3 ]       };
+      key <AB04> { [      U0BA8,  U0BA9 ]       };
+      key <AB05> { [      U0BB5,  U0BB4 ]       };
+      key <AB06> { [      U0BB2,  U0BB3 ]       };
+      key <AB07> { [      U0BB8,  U0BB6	]       };
+      key <AB08> { [      comma,      U0BB7 ]       };
+      key <AB09> { [      period,     U0964 ]       };
+      key <AB10> { [      U0BAF,  question  ]       };
+
+      include "level3(ralt_switch)"
+      include "rupeesign(4)"
+};
