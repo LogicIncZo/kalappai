@@ -29,17 +29,35 @@ port; never touches your data directory).
 
 | Method & path | Purpose |
 | --- | --- |
-| `POST /api/certificates` | Issue. Body: `{ alias, layoutId, passageId, targetHash, stats: { grossWpm, netWpm, accuracy, errors, strokes, kdph, elapsedMs } }`. Returns `{ id, signature, verifyPath }`. |
-| `GET /api/certificates/:id` | JSON verification: full record + `signatureValid`. |
-| `GET /certs/:id` | Human verification page. |
+| `POST /api/certificates` | Issue. Body: `{ alias, layoutId, passageId, targetHash, chars, stats: { grossWpm, netWpm, accuracy, errors, strokes, kdph, elapsedMs, chars } }`. Enforces pass rules (accuracy ≥ 90 %, elapsed ≥ 30 s, chars ≥ 120) → `422` otherwise. Returns `{ id, signature, verifyPath, verifyUrl, credential, vcJwt }`. |
+| `GET /api/certificates/:id` | JSON verification: full record + `signatureValid` (HMAC tamper check). |
+| `GET /api/issuer` | Open Badges 3.0 issuer profile + Ed25519 public key (JWK). |
+| `GET /.well-known/jwks.json` | JWKS for verifying issued VC-JWTs offline. |
+| `GET /certs/:id` | Human verification page: QR code, print button, VC-JWT download. |
 | `GET /` | Health. |
 
 `targetHash` is the SHA-256 of the exact passage text the client typed against;
 it binds the certificate to a known passage (`exam-60s-v1` in the app).
 
-## Signing
+## Signing (two independent layers)
 
-`signature = HMAC-SHA256(secret, sorted-JSON(record-without-signature) + issued_at)`.
+1. **HMAC tamper-evidence (database):** `signature = HMAC-SHA256(secret, canonical(record-without-signature) + issued_at)`. The verify endpoint re-derives it from the stored row, so silent DB edits are detected.
+2. **Ed25519 VC-JWT (credential):** each certificate is also issued as a W3C
+   Verifiable Credential (VC 2.0, JWT proof format, `EdDSA`) carrying an
+   Open Badges 3.0-shaped achievement. Verify offline with `/.well-known/jwks.json`
+   (e.g. `joze verify` or any JWT library).
+
 Keep `KALAPPAI_CERT_SECRET` stable for the life of your database — losing it
-makes every previously issued certificate unverifiable. Without it the server
-refuses to start.
+makes the HMAC layer unverifiable for old records. The Ed25519 issuer key is
+generated once and stored at `${KALAPPAI_CERT_DB_DIR}/issuer-key.json` (mode 0600);
+back it up if third parties will verify old certificates offline.
+
+## Environment
+
+| Variable | Purpose |
+| --- | --- |
+| `KALAPPAI_CERT_SECRET` | HMAC secret (required for persistent HMAC validity). |
+| `KALAPPAI_CERT_BASE` | Public base URL used in `verifyUrl`, credential ids and QR codes. |
+| `KALAPPAI_CERT_ORIGIN` | CORS allow-origin (e.g. the PWA's GitHub Pages origin). |
+| `KALAPPAI_CERT_DB` | SQLite database path (directory also holds `issuer-key.json`). |
+| `PORT` | Listen port (default 8123). |
