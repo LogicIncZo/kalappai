@@ -26,4 +26,4 @@ Original code, lesson corpus, exam passage, UI and the certification server:
 
 ## Runtime dependencies
 
-- `qrcode` (MIT) — server-side QR generation on the certificate verify page.
+- `qrcode` (MIT) — QR generation on certificate verify pages (now in the [kalappai-cert](https://github.com/LogicIncZo/kalappai-cert) backend).

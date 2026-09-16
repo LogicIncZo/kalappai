@@ -56,26 +56,16 @@ against the same source that ships.
 
 ## Certification service (optional)
 
-The app is fully functional offline with no server. If you want signed practice
-certificates with public verification:
+The app is fully functional offline with no server. Signed practice
+certificates (W3C VC 2.0 + Open Badges 3.0 shape, QR verify pages) are issued
+by a separate backend:
 
-```sh
-KALAPPAI_CERT_SECRET=$(openssl rand -hex 32) bun server/index.ts
-# :8123 — POST /api/certificates, GET /api/certificates/:id, GET /certs/:id
-```
-
-- Each issued certificate is **both** an HMAC-protected database record **and**
-  a W3C **Verifiable Credential** (VC 2.0 JWT proof, EdDSA) carrying an
-  **Open Badges 3.0**-shaped achievement with the learner-entered name.
-- The public verify page (`/certs/:id`) renders a QR code pointing back at
-  itself, a print button (print-ready certificate layout), and the raw VC-JWT
-  for offline verification against `/.well-known/jwks.json`.
-- Standards: OB 3.0 (1EdTech) shape, VC 2.0 (W3C), EdDSA/Ed25519 (RFC 8032).
-  Pass rules enforced server-side (accuracy ≥ 90 %, ≥ 30 s, ≥ 120 chars).
-- Configure `KALAPPAI_CERT_BASE` (public URL — it appears in QR codes and
-  credential ids), `KALAPPAI_CERT_ORIGIN` (CORS), `KALAPPAI_CERT_DB`, `PORT`.
+- Service repo: **https://github.com/LogicIncZo/kalappai-cert**
+  (`LogicIncZo/kalappai-cert`) — Hono + SQLite, zero external services.
 - Live instance: https://kalappai-cert-cashlessconsumer.zocomputer.io
-- A certificate from Kalappai is a **practice record**, not a government
+- The PWA's certificate panel takes any server base URL; run your own and
+  paste it in. Pass rules are enforced server-side (accuracy ≥ 90 %, ≥ 30 s,
+  ≥ 120 chars). A certificate is a **practice record**, not a government
   qualification — the UI says so wherever one is issued or verified.
 
 ## Docs
