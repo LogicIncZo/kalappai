@@ -2,7 +2,7 @@
   "name": "kalappai",
   "private": true,
   "version": "0.2.0",
-  "description": "Tamil-first, open-source, browser-based typing tutor \u2014 Tamil99, InScript, Tamil Typewriter, Phonetic (transliteration). PWA, works offline.",
+  "description": "Tamil-first, open-source, browser-based typing tutor — Tamil99, InScript, Tamil Typewriter, Phonetic (transliteration). PWA, works offline.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "hono": "^4.13.8",
     "lucide-react": "^1.46.0",
+    "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
@@ -28,6 +29,7 @@
     "vite-plugin-pwa": "^1.3.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.2"
+    "@types/bun": "^1.4.2",
+    "@types/qrcode": "^1.5.6"
   }
 }
