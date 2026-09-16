@@ -174,13 +174,13 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
     try {
       const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(nfc(target)));
       const passageHash = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
-      const res = await fetch(base + "api/certs", {
+      const res = await fetch(base + "api/certificates", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name: alias.trim(), layout: layoutId, passageId: `${lessonId}:${itemIndex}`, passageHash,
+          alias: alias.trim(), layoutId, passageId: `${lessonId}:${itemIndex}`, targetHash: passageHash,
           stats: { grossWpm: m.gross, netWpm: m.net, accuracy: m.accuracy, errors, strokes,
-                   kdph: m.kdph, durationMs: elapsedMs, chars: nfc(target).length, aksharas: aksharas(nfc(target)).length },
+                   kdph: m.kdph, elapsedMs, chars: nfc(target).length },
         }),
       });
       const j = await res.json();
@@ -190,7 +190,7 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
           : (j.error ?? res.statusText) });
         return;
       }
-      setState({ kind: "ok", url: `${base}certs/${j.certId}` });
+      setState({ kind: "ok", url: j.verifyUrl ?? `${base}certs/${j.id}` });
     } catch (e) { setState({ kind: "err", msg: (e as Error).message }); }
   };
 
