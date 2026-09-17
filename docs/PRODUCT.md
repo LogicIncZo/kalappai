@@ -118,3 +118,98 @@ moat and a paywall undercuts it.
   Now is three iterations, not one.
 - **Provenance sloppiness.** One uncited passage undermines the honesty brand the
   certificates depend on. The §7 versioning rules are not optional.
+
+## The universal question — "all languages in the universe" (SWOT, 2026-09-17)
+
+**Reframe first, then rate.** ~7,000 living languages is a civilisation project; nobody
+has done it (Gboard's 1,000+ varieties took a decade with the world's largest i18n
+teams). Unicode encodes ~160 scripts, roughly 30 are in daily modern use, and the
+languages people actually type with a *dedicated keyboard layout* number in the low
+hundreds. The honest ambition is therefore: **every language that has (or deserves) a
+keyboard** — India's 22 scheduled languages, the top ~40 world scripts, and the
+new-script tail. That covers the overwhelming majority of humans who type. Chinese and
+Japanese are not an extension; they are a separate product line (candidate/IME
+practice model), like a later sibling.
+
+**The structural prerequisite — the one big refactor.** Curriculum content is code
+today (`BOOK`/`LESSONS` in TS). Universal means **language packs as data**:
+`packs/<lang>/` holding layout rules, golden corpus, curriculum, fonts, exam profiles
+and provenance, consumed by one generic engine. Once packs are data, scale equals
+*native-review throughput*, not engineering throughput. That is the whole game.
+
+### Strengths
+- **The engine abstractions already cover most of the world.** Rule machine → abugidas
+  (all Brahmic scripts, Thai/Lao/Khmer class). Stateless shift levels → Latin, Cyrillic,
+  Greek, Arabic, Hebrew, Ethiopic, Armenian, Georgian. Transliteration → romaji/pinyin
+  on-ramps. Hangul needs only a small *composition* kind. CJK candidates is the one true
+  outlier.
+- **The trust discipline is language-agnostic.** Golden corpus + typeable-everything
+  self-check gives every future language the same provable correctness Tamil has. No
+  competitor can say that; provenance is our moat at scale.
+- **The porting pipeline is proven and mechanical.** XKB + CLDR + jquery.ime are
+  machine-readable pinned sources — the InScript gap-fill was literally parsed from
+  `/usr/share/X11/xkb/symbols/in`. Ports are data work, not hand-crafting.
+- **Certification + cognizance are script-agnostic from day one.** Keystroke statistics
+  and attestation do not care which script; only passages and thresholds are per-language.
+- **Offline PWA, no accounts** fits exactly the low-connectivity, non-Latin markets.
+- **GPL:** every language added is permanent public infrastructure; the tail can be
+  community-carried.
+
+### Weaknesses
+- **Curriculum needs native review.** AI drafts layouts, goldens and lessons; a human
+  must own pedagogical sign-off per language. Review throughput — not code — is the ceiling.
+- **The UI is not universal yet:** RTL surfaces (Arabic/Hebrew/Urdu), per-script font
+  stacks, localized chrome, a keyboard visualiser driven by layout data instead of Tamil.
+- **CJK is a different pedagogy**, not a data pack: candidate selection, vocabulary,
+  keystroke economy. Decide it as its own product.
+- **"Kalappai" is Tamil branding.** Needs an umbrella name with per-language editions
+  (Kalappai remains the Tamil edition).
+- **Exam alignment is per-state, per-cycle data work** — thresholds, duration, legal
+  layout per test. Unsexy and endless; it is also the wedge.
+
+### Opportunities
+- **India-22 is the beachhead.** InScript standardises one physical layout across all
+  Indic scripts — one parser, many languages — and every major state runs typing
+  qualifications (TNDTE, CPCT-class, Kerala PSC). A funded, certificate-driven wedge per
+  language.
+- **AI-drafted, native-verified packs.** Layout + goldens + curriculum draft at near-zero
+  marginal cost; the native reviewer is the human gate. This is the only credible scaling
+  trick and it plays to the loop we already run.
+- **New-script / digital-vitality languages** (Adlam, N'Ko, Ol Chiki, Tifinagh, Vai):
+  zero competition, high mission value, grant-friendly (Unicode/CLDR ecosystem, vitality
+  programmes). Small packs, outsized legitimacy.
+- **Verifiable skill proof for BPO/data-entry** in Arabic, Thai and other non-Latin
+  scripts — the attested-record niche is unowned outside Latin.
+- **Contribute back:** tested, provenance-pinned layout packs as an upstream public good
+  (CLDR/XKB/Keyman-adjacent). The honesty brand compounds.
+
+### Threats
+- **Incumbent motion:** Monkeytype adding curricula (velocity + community), Typetera
+  adding depth, Google bundling a tutor next to Gboard's language list.
+- **OS "practice mode"** commoditising basic layout teaching at the platform layer.
+- **Review burnout** around language ~50; the community gate needs rotation and tooling,
+  or it becomes the failure mode.
+- **Scope death:** attempting 200 languages at once instead of laddering. The ladder is
+  the product plan; skipping it is how this dies.
+- **Exam-spec drift:** mappings and thresholds change by state and cycle; provenance
+  discipline must keep pace or the trust moat silts up.
+- **Monetisation tension:** the no-accounts invariant blocks SaaS revenue; only institute
+  licences and cert-adjacent services remain. Correct for trust; accept the ceiling.
+
+### The ladder (unit of progress: a **GA language** = pack complete, self-check green, native-reviewed)
+
+| Tier | Scope | When |
+| --- | --- | --- |
+| 0 (done) | Tamil — 4 layouts, provable, certified | shipped |
+| 1 | 9 more Indic languages reusing InScript + script layout + curriculum (Malayalam, Telugu, Kannada, Hindi, Marathi, Bengali, Gujarati, Punjabi, Odia) — proves the pack pipeline end to end | 0–6 mo |
+| 2 | Global stateless scripts: Arabic, Persian/Urdu, Hebrew, Thai, Lao, Khmer, Myanmar, Sinhala, Ethiopic, Armenian, Georgian, Greek, Cyrillic set, Latin variants | 6–18 mo |
+| 3 | Korean (composition kind); then a separate go/no-go on the CJK candidate-product line | 18 mo+ |
+| Mission (parallel) | New-script languages; cheap packs, grant-attractive, no competition | ongoing |
+| Never | Coverage promises over all 7,000; languages without a writing system; sign languages | — |
+
+**Ambition rating.** The honest version — every keyboard that exists, ~150 languages,
+five years, community-carried tail — is *ambitious but structurally sound*, because the
+hard, trust-shaped part (provable engine, attested credentials) is already built and is
+script-agnostic. The literal version — all 7,000 — is not a product; decline it with a
+reason. The one number survives unchanged: certificates issued per week, now read
+per-language cohort.
