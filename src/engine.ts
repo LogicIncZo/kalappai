@@ -17,15 +17,10 @@
 /* ---------- Tamil primitives ---------- */
 
 const PULLI = "\u0BCD";
-const ZWNJ = "\u200C";
 
 const CONSONANTS = "கஙசஞடணதநபமயரலவழளறனஸஷஜஹஶ";
 const GRANTHA = "ஸஷஜஹஶ";
 const INDEPENDENT = "அஆஇஈஉஊஎஏஐஒஓஔ";
-const VOWEL_SIGNS = "ாிீுூெேைொோௌ";
-const PREBASE_SIGNS = "ெேைொோௌ";
-const TAMIL_DIGITS = "௦௧௨௩௪௫௬௭௮௯";
-const TAMIL_SYMBOLS = "௳௴௵௶௷௸௹௺";
 
 const isConsonant = (c: string) => c.length > 0 && CONSONANTS.includes(c);
 const isIndependent = (c: string) => c.length > 0 && INDEPENDENT.includes(c);
@@ -317,7 +312,7 @@ const TRANSLIT_RULES_SRC: [string, string][] = [
 ];
 
 const TRANSLIT_RULES: [RegExp, string][] = TRANSLIT_RULES_SRC.map(
-  ([pat, rep]) => [new RegExp(pat + "$", "gu"), rep],
+  ([pat, rep]) => [new RegExp(`${pat}$`, "gu"), rep],
 );
 
 /** Is produced text still consistent with the target? Allows transliteration's
@@ -462,7 +457,7 @@ export function press(lay: Layout, buf: string, code: string, shift: boolean, de
 
   // Grantha + space → pulli form (Extended)
   if (code === "Space" && GRANTHA.includes(lastChar(buf))) {
-    return { out: PULLI + " ", rule: "grantha-space", note: `Tamil99 Extended: a grantha letter before a space takes a pulli (${buf.slice(-1)} → ${buf.slice(-1)}்).`, tone: "auto", dead: false };
+    return { out: `${PULLI} `, rule: "grantha-space", note: `Tamil99 Extended: a grantha letter before a space takes a pulli (${buf.slice(-1)} → ${buf.slice(-1)}்).`, tone: "auto", dead: false };
   }
 
   // Shifted forms
@@ -534,33 +529,43 @@ const T99_SIGN_INDEX: Record<string, number> = {
   KeyQ: 1, KeyS: 2, KeyW: 3, KeyD: 4, KeyE: 5, KeyG: 6, KeyT: 7, KeyR: 8, KeyC: 9, KeyX: 10, KeyZ: 11,
 };
 
-/** Every physical key, for brute-force hint search. */
+/** Every physical key, for brute-force hint search.
+ *  Memoised: this sits in the inner loop of `nextKeys` and `reachable`, which
+ *  together drive `typeable()` ~170 times per self-check. Rebuilding ~130 objects
+ *  per call was the difference between a 1-second gate and a 12-second one.
+ *  Callers only ever iterate the result, so sharing one frozen list is safe. */
+let allKeysCache: { code: string; shift: boolean }[] | null = null;
 function allKeys(): { code: string; shift: boolean }[] {
+  if (allKeysCache) return allKeysCache;
   const out: { code: string; shift: boolean }[] = [];
   for (const row of KEY_ROWS) for (const code of row) {
     out.push({ code, shift: false }, { code, shift: true });
   }
   out.push({ code: "Space", shift: false });
-  return out;
+  allKeysCache = out;
+  return allKeysCache;
 }
 
 /** Which keys produce the next needed output, verified by simulation. */
 export function nextKeys(lay: Layout, buf: string, target: string, dead: boolean): { code: string; shift: boolean }[] {
-  const hits: { code: string; shift: boolean }[] = [];
   const prog0 = progScore(nfc(buf), target);
   const tier1: { code: string; shift: boolean }[] = [];
-  const tier2: { code: string; shift: boolean }[] = [];
+  const offTrack: { k: { code: string; shift: boolean }; buf: string; dead: boolean }[] = [];
   for (const k of allKeys()) {
     const r = press(lay, buf, k.code, k.shift, dead);
     if (r.dead) continue;
     const nbn = nfc(applyPress(buf, r));
     if (!onTrack(nbn, target)) {
-      if (reachable(lay, nbn, target, r.dead)) tier2.push(k);
+      offTrack.push({ k, buf: nbn, dead: r.dead });
       continue;
     }
     if (progGT(progScore(nbn, target), prog0)) tier1.push(k);
   }
-  return tier1.length ? tier1 : tier2;
+  /* Deferred on purpose. The 1-ply lookahead is O(keys) per candidate — O(keys²)
+   * per step — and its result is only ever used when nothing made forward
+   * progress. Same return value, paid for only when it is the answer. */
+  if (tier1.length) return tier1;
+  return offTrack.filter((o) => reachable(lay, o.buf, target, o.dead)).map((o) => o.k);
 }
 
 /** Can this layout type this text at all? */
@@ -707,6 +712,12 @@ export const BOOK: Chapter[] = [
 ];
 
 export const LESSONS: Lesson[] = BOOK.flatMap((c) => c.lessons);
+
+/* The timed examination passage. Declared here rather than in the UI because it is
+   content, not presentation: the demo harness types it, and the certification
+   server is told its hash. One declaration, one hash. */
+export const EXAM_TEXT = "தமிழ் மொழி மிகவும் பழமையானது. அது இனிமையானது.";
+export const EXAM_SECONDS = 60;
 
 /* ---------- Progress (local-first, no accounts) ---------- */
 

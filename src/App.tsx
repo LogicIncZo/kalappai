@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Check, Gauge, Keyboard, Lightbulb, RotateCcw, Timer, TriangleAlert, Trophy, X } from "lucide-react";
-import { press, nextKeys, typeable, LESSONS, BOOK, LAYOUTS, layoutById, selfCheck, metrics, translitStep, reachable, typeableSearch, onTrack, aksharas, KEY_ROWS, KEY_CAP, FINGER, nfc, ASCII, FINGER_LABEL, FINGER_COLOR, loadProgress, saveProgress, progressKey, doneCount } from "./engine";
-import type { LayoutId, Lesson, Chapter, Metrics, PressResult, Layout, ProgressMap } from "./engine";
+import { BookOpen, Check, Gauge, Keyboard, Lightbulb, RotateCcw, Timer, TriangleAlert, Trophy } from "lucide-react";
+import { press, nextKeys, LESSONS, BOOK, LAYOUTS, layoutById, selfCheck, metrics, reachable, onTrack, aksharas, KEY_ROWS, KEY_CAP, FINGER, nfc, ASCII, FINGER_LABEL, FINGER_COLOR, loadProgress, saveProgress, progressKey, doneCount, EXAM_TEXT, EXAM_SECONDS } from "./engine";
+import type { LayoutId, Metrics, PressResult, Layout, ProgressMap } from "./engine";
 /* ---------- theme ---------- */
 
 type Theme = { bg: string; panel: string; edge: string; fg: string; muted: string; accent: string; good: string; bad: string };
@@ -70,7 +70,7 @@ function VirtualKeyboard({
   return (
     <div className="flex flex-col items-center gap-1.5">
       {KEY_ROWS.map((row, i) => (
-        <div key={i} className="flex gap-1.5" style={{ marginLeft: i === 1 ? 14 : i === 2 ? 22 : i === 3 ? 34 : 0 }}>
+        <div key={row.join("+")} className="flex gap-1.5" style={{ marginLeft: i === 1 ? 14 : i === 2 ? 22 : i === 3 ? 34 : 0 }}>
           {row.map((code) => (
             <Key
               key={code}
@@ -115,14 +115,22 @@ function AksharaText({ target, typed, errored }: { target: string; typed: string
   });
   let offset = 0;
   return (
-    <div className="flex flex-wrap items-end gap-x-1 gap-y-2" style={{ fontFamily: "'Noto Sans Tamil', system-ui, sans-serif" }}>
+    <div
+      className="flex flex-wrap items-end gap-x-1 gap-y-2"
+      /* stable hook for the demo walkthrough, which must type the passage the app
+         is actually showing rather than a string hard-coded in the test */
+      data-kalappai-target={target}
+      style={{ fontFamily: "'Noto Sans Tamil', system-ui, sans-serif" }}
+    >
       {units.map((u, i) => {
-        const start = offset;
         offset += u.length;
         const done = nfc(typed).length >= offset;
         const isActive = i === active;
         return (
-          <span key={i} className="relative">
+          /* position within the line is the identity here: the same akshara can
+             repeat, and the whole list is rebuilt per line */
+          // biome-ignore lint/suspicious/noArrayIndexKey: duplicated aksharas make the text ambiguous as a key
+          <span key={`${u}-${i}`} className="relative">
             <span
               className="text-[34px] leading-[1.35] transition-colors duration-100"
               style={{
@@ -148,8 +156,6 @@ function AksharaText({ target, typed, errored }: { target: string; typed: string
    The app
    ========================================================================== */
 
-const EXAM_TEXT = "தமிழ் மொழி மிகவும் பழமையானது. அது இனிமையானது.";
-const EXAM_SECONDS = 60;
 
 type Phase = "idle" | "typing" | "done";
 
@@ -166,7 +172,7 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
   const issue = async () => {
     let base = server.trim();
     if (!base || !alias.trim()) { setState({ kind: "err", msg: "Both an alias and a certification server URL are needed." }); return; }
-    if (!base.startsWith("http")) base = "https://" + base;
+    if (!base.startsWith("http")) base = `https://${base}`;
     if (!base.endsWith("/")) base += "/";
     localStorage.setItem("kalappai.certServer", base);
     localStorage.setItem("kalappai.certAlias", alias.trim());
@@ -174,7 +180,7 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
     try {
       const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(nfc(target)));
       const passageHash = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
-      const res = await fetch(base + "api/certificates", {
+      const res = await fetch(`${base}api/certificates`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -203,7 +209,7 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
         <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: theme.muted }}>
           verifiable practice certificate · optional
         </span>
-        <button onClick={() => setOpen((o) => !o)} className="text-xs underline" style={{ color: theme.accent }}>
+        <button type="button" onClick={() => setOpen((o) => !o)} className="text-xs underline" style={{ color: theme.accent }}>
           {open ? "hide" : "issue one"}
         </button>
       </div>
@@ -213,7 +219,7 @@ function CertIssue({ m, errors, strokes, layoutId, lessonId, itemIndex, target, 
             onChange={(e) => setAlias(e.target.value)} maxLength={60} />
           <input className={inp} style={st} placeholder="Certification server URL (e.g. https://certs.example.org)"
             value={server} onChange={(e) => setServer(e.target.value)} />
-          <button onClick={issue} disabled={state.kind === "busy"}
+          <button type="button" onClick={issue} disabled={state.kind === "busy"}
             className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
             style={{ background: theme.accent, color: "#1a1408" }}>
             {state.kind === "busy" ? "issuing…" : "Issue & sign"}
@@ -252,7 +258,6 @@ export default function Kalappai() {
   const [showWhy, setShowWhy] = useState(true);
   const [view, setView] = useState<"book" | "practice">("book");
   const [progress, setProgress] = useState<ProgressMap>(loadProgress);
-  const scrollRef = useRef<HTMLDivElement>(null);
   /* Real keystrokes arrive as separate tasks, but never let the handler act on a
      stale closure: the committed line lives in a ref alongside its state copy. */
   const bufRef = useRef("");
@@ -265,6 +270,7 @@ export default function Kalappai() {
   const check = useMemo(() => selfCheck(), []);
 
   /* layout switching must not leave a half-typed line from another layout */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the exercise identity is the trigger, not an input — the reset reads none of these but must run when any changes
   useEffect(() => {
     bufRef.current = "";
     deadRef.current = false;
@@ -400,12 +406,6 @@ export default function Kalappai() {
     setDead(false);
   };
 
-  const nextItem = () => {
-    if (mode === "exam") return restart();
-    setItemIndex((i) => (i + 1) % lesson.items.length);
-    restart();
-  };
-
   const markDoneAndAdvance = () => {
     const next = itemIndex + 1;
     if (next < lesson.items.length) {
@@ -423,8 +423,6 @@ export default function Kalappai() {
     setView("practice");
     restart();
   };
-
-  const chapterOf = BOOK.find((c) => c.lessons.some((l) => l.id === lessonId));
 
   const units = aksharas(target);
   const doneUnits = aksharas(nfc(buf)).length;
@@ -466,7 +464,7 @@ export default function Kalappai() {
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="flex rounded-lg border p-0.5" style={{ borderColor: theme.edge }}>
             {LAYOUTS.map((l) => (
-              <button
+              <button type="button"
                 key={l.id}
                 onClick={() => setLayoutId(l.id)}
                 className="rounded-md px-3.5 py-1.5 text-sm transition-colors"
@@ -484,7 +482,7 @@ export default function Kalappai() {
 
           <div className="flex rounded-lg border p-0.5" style={{ borderColor: theme.edge }}>
             {(["learn", "exam"] as const).map((mm) => (
-              <button
+              <button type="button"
                 key={mm}
                 onClick={() => setMode(mm)}
                 className="rounded-md px-3.5 py-1.5 text-sm capitalize transition-colors"
@@ -499,21 +497,21 @@ export default function Kalappai() {
             ))}
           </div>
 
-          <button
+          <button type="button"
             onClick={() => setView((v) => (v === "book" ? "practice" : "book"))}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
             style={{ borderColor: view === "book" ? theme.accent : theme.edge, color: view === "book" ? theme.accent : theme.muted }}
           >
             <BookOpen className="size-3.5" /> lesson book
           </button>
-          <button
+          <button type="button"
             onClick={restart}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
             style={{ borderColor: theme.edge, color: theme.muted }}
           >
             <RotateCcw className="size-3.5" /> reset
           </button>
-          <button
+          <button type="button"
             onClick={() => setShowWhy((v) => !v)}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
             style={{ borderColor: showWhy ? theme.accent : theme.edge, color: showWhy ? theme.accent : theme.muted }}
@@ -556,7 +554,7 @@ export default function Kalappai() {
                         const done = doneCount(progress, layoutId, l.id, l.items.length);
                         const complete = done >= l.items.length;
                         return (
-                          <button
+                          <button type="button"
                             key={l.id}
                             disabled={!avail}
                             onClick={() => openLesson(l.id)}
@@ -588,7 +586,7 @@ export default function Kalappai() {
                 const avail = !l.layouts || l.layouts.includes(layoutId);
                 const active = l.id === lessonId && mode === "learn";
                 return (
-                  <button
+                  <button type="button"
                     key={l.id}
                     disabled={!avail}
                     onClick={() => {
@@ -626,7 +624,13 @@ export default function Kalappai() {
           <section className="order-1 lg:order-2">
             <div className="rounded-2xl border p-5" style={{ borderColor: theme.edge, background: theme.panel }}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em]" style={{ color: theme.muted }}>
+                <div
+                  /* stable hook for the demo walkthrough: this is the only element
+                     that distinguishes exam mode from the lesson it was entered from */
+                  data-kalappai-stage
+                  className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em]"
+                  style={{ color: theme.muted }}
+                >
                   <Keyboard className="size-3.5" />
                   {mode === "exam" ? "timed examination" : `${lesson.id} · ${lesson.title} · exercise ${itemIndex + 1}/${lesson.items.length}`}
                 </div>
@@ -660,13 +664,13 @@ export default function Kalappai() {
                     </p>
                   )}
                   <div className="mt-4 flex gap-2">
-                    <button onClick={markDoneAndAdvance} className="rounded-lg px-3.5 py-1.5 text-sm font-medium" style={{ background: theme.accent, color: "#1a1408" }}>
+                    <button type="button" onClick={markDoneAndAdvance} className="rounded-lg px-3.5 py-1.5 text-sm font-medium" style={{ background: theme.accent, color: "#1a1408" }}>
                       {isLast ? "Lesson done — back to book" : "Next exercise"}
                     </button>
-                    <button onClick={restart} className="rounded-lg border px-3.5 py-1.5 text-sm" style={{ borderColor: theme.edge, color: theme.muted }}>
+                    <button type="button" onClick={restart} className="rounded-lg border px-3.5 py-1.5 text-sm" style={{ borderColor: theme.edge, color: theme.muted }}>
                       Repeat
                     </button>
-                    <button onClick={() => setView("book")} className="rounded-lg border px-3.5 py-1.5 text-sm" style={{ borderColor: theme.edge, color: theme.muted }}>
+                    <button type="button" onClick={() => setView("book")} className="rounded-lg border px-3.5 py-1.5 text-sm" style={{ borderColor: theme.edge, color: theme.muted }}>
                       Book
                     </button>
                   </div>
@@ -688,7 +692,7 @@ export default function Kalappai() {
                   </p>
                   <CertIssue m={m} errors={errors} strokes={strokes} layoutId={layoutId}
                     lessonId={lessonId} itemIndex={itemIndex} target={target} elapsedMs={elapsedMs} theme={theme} />
-                  <button onClick={restart} className="mt-3 rounded-lg px-3.5 py-1.5 text-sm font-medium" style={{ background: theme.accent, color: "#1a1408" }}>
+                  <button type="button" onClick={restart} className="mt-3 rounded-lg px-3.5 py-1.5 text-sm font-medium" style={{ background: theme.accent, color: "#1a1408" }}>
                     Again
                   </button>
                 </div>
@@ -807,8 +811,8 @@ export default function Kalappai() {
                     divergence ledger
                   </div>
                   <ul className="space-y-1.5 text-[11px]" style={{ color: theme.muted }}>
-                    {lay.divergences.map((d, i) => (
-                      <li key={i} className="border-l pl-2" style={{ borderColor: theme.edge }}>{d}</li>
+                    {lay.divergences.map((d) => (
+                      <li key={d} className="border-l pl-2" style={{ borderColor: theme.edge }}>{d}</li>
                     ))}
                   </ul>
                 </>
