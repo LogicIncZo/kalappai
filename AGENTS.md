@@ -116,7 +116,7 @@ screenshots stay reproducible:
 | `contract/` | Vendored service contract + SHA-256 pin (do not edit by hand) |
 | `scripts/verify.sh` | The gate. `check-contract.ts`, `check-docs.ts`, `smoke-dist.ts`, `smoke-live.ts`, `sync-contract.sh` |
 | `demo/` | Seeded progress + browser walkthrough + screenshots |
-| `docs/` | `REQUIREMENTS.md`, `SPECIFICATIONS.md` (design intent), `ref/` (pinned upstream layout sources) |
+| `docs/` | `REQUIREMENTS.md`, `SPECIFICATIONS.md`, `PRODUCT.md` (design intent + product strategy), `ref/` (pinned upstream layout sources) |
 | `public/` | Icons, favicon, PWA assets |
 
 ## Deployment

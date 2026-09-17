@@ -17,7 +17,26 @@ Conventions:
 
 ## Ready
 
-### 1. Print stylesheet for the verify page
+### 1. Exam profiles as data (TNDTE Junior, TNDTE Senior, TNPSC-implied)
+
+**Why.** Demand here is certificate-driven and the exam mode has exactly one
+generic passage. Aspirants need practice that mirrors their exam's duration,
+passage typology and marking. `docs/PRODUCT.md` makes this the top Now item;
+REQUIREMENTS §7 already requires profiles to be versioned data with cited
+sources.
+
+**Done when.**
+
+- `src/engine.ts` declares an `EXAM_PROFILES` list (data, not code): id, name,
+  source citation, duration, marking rule, target line, passage bank (≥5 passages
+  for the first three profiles). The current `EXAM_TEXT` becomes the default
+  profile's first passage so the hash the demo and certification request use
+  stays the declaration, not a copy.
+- Exam mode offers a profile picker; metrics hidden until the bell per profile.
+- `check-docs` asserts the profile count and passage counts from code.
+- A CHANGELOG entry, and the profile sources cited in NOTICE.md.
+
+### 2. Print stylesheet for the verify page
 
 **Why.** The verify page is the one artefact a learner is expected to hand to a
 third party, and it is currently printed by the browser's default rules: the
@@ -34,7 +53,7 @@ untrustworthy is a certificate that does not get presented.
 - `check-docs` still passes: the page's honest-labelling sentence ("practice
   record, not a TNDTE or TNPSC certificate") must survive the print stylesheet.
 
-### 2. In-app verification of a certificate id
+### 3. In-app verification of a certificate id
 
 **Why.** A learner can currently *receive* a certificate but not *check* one
 without the issuing server being reachable in a browser. The interesting case is a
@@ -54,7 +73,7 @@ be told whether it verifies — without trusting the page the issuer serves.
   `contract/cert-service.v1.json`, so this is a two-repo change if the service
   must expose anything new.
 
-### 3. `translit` coverage in the self-check
+### 4. `translit` coverage in the self-check
 
 **Why.** `selfCheck()` deliberately skips the transliteration layout — it proves
 coverage for the three key-driven layouts and defers translit to the golden
@@ -74,7 +93,7 @@ and the gate will not notice.
 
 ## Blocked
 
-### 4. Attestation tier on issued certificates (client half)
+### 5. Attestation tier on issued certificates (client half)
 
 **Blocked on:** [`LogicIncZo/kalappai-cert`](https://github.com/LogicIncZo/kalappai-cert)
 backlog item 1 — server-side attestation for `POST /api/certificates`.
