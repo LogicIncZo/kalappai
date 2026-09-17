@@ -1,12 +1,41 @@
 name: CI
 
+# The loop gate, then the deployment gates.
+#
+# One command — `bun run verify` — is the contract between a change and a commit:
+# the same suite a human runs locally, an agent runs before proposing a change, and
+# CI runs before anything is allowed to deploy. Jobs are ordered by blast radius:
+# nothing deploys, and nothing is confirmed, until the gate passes.
+#
+#   gate          the 9-stage verification suite (builds dist/)
+#   deploy-pages  publishes dist/ to GitHub Pages            (main)
+#   conformance   proves the DEPLOYED site and the DEPLOYED certification service
+#                 still satisfy this commit and the pinned contract  (main)
+#   release       attaches a provenance-attested zip of dist/  (v* tags)
+#
+# The browser walkthrough (`bun run demo:walkthrough`, stage 8 under `--full`) is
+# deliberately NOT in CI: it needs a real browser, and `smoke:dist` already fails
+# on any page error. Run it locally before a release.
+
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
+  # Armed so a loop iteration can re-run the gate deliberately, without having to
+  # invent a commit just to re-ask the question.
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  gate:
+    name: Verification gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,16 +43,18 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - name: Typecheck
-        run: bunx tsc --noEmit -p tsconfig.json
-      - name: Engine tests (169 self-check pairs + 30 golden cases)
-        run: bun test test/
-      - name: Build (PWA)
-        run: bunx vite build
+      - name: bun run verify
+        run: bun run verify
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
 
   deploy-pages:
-    needs: test
-    if: github.ref == 'refs/heads/main'
+    name: Deploy to GitHub Pages
+    needs: gate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     permissions:
       pages: write
       id-token: write
@@ -33,14 +64,60 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  conformance:
+    name: Deployed surface conforms
+    needs: deploy-pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bunx vite build
-      - uses: actions/upload-pages-artifact@v3
+      - run: bun run build
+      # GitHub Pages is eventually consistent: the freshly deployed asset can lag
+      # the CDN by a few seconds. Retry briefly rather than reporting a false
+      # failure — but never silence a real mismatch.
+      - name: bun run smoke:live
+        run: |
+          for attempt in 1 2 3 4; do
+            if bun run smoke:live; then exit 0; fi
+            echo "::warning::conformance attempt ${attempt} failed — waiting for CDN to settle"
+            sleep 15
+          done
+          echo "::error::deployed surface never converged on this commit"
+          exit 1
+
+  release:
+    name: Release (provenance-attested build zip)
+    needs: gate
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Pack the build
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          (cd dist && zip -qr "../kalappai-${tag}.zip" .)
+          sha256sum "kalappai-${tag}.zip" | tee "kalappai-${tag}.zip.sha256"
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: kalappai-${{ github.ref_name }}.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            kalappai-${{ github.ref_name }}.zip
+            kalappai-${{ github.ref_name }}.zip.sha256
