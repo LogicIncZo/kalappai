@@ -45,14 +45,24 @@ Layout rules whose provenance cannot be pinned to a source are labelled
 
 ```sh
 bun install
-bun run dev        # vite dev server
-bun test           # engine (169 self-check pairs + 30 golden cases) + server tests
-bun run build      # typecheck + PWA build to dist/
+bun run dev               # vite dev server
+bun run verify            # THE GATE — see below
+bun run verify --fast     # contract, docs, types, tests — the tight inner loop
+bun run demo:seed         # a deterministic learner state, written to demo/out/
+bun run demo:walkthrough  # drive the built app, capture screenshots to demo/out/
 ```
+
+**`bun run verify` is the contract between a change and a commit.** It is the same
+suite a human runs locally, an agent runs before proposing a change, and CI runs
+before anything deploys: the vendored service contract still matches its pin, the
+README's countable claims match the engine, types and lint are clean, the golden
+corpus replays, the PWA builds, and the built `dist/` still behaves (manifest,
+service worker, base path, offline shell, budgets). `bun run verify --fast` skips
+lint, the build, the PWA smoke and the demo stage, for the tight inner loop.
 
 Engine, layouts and lesson data live in `src/engine.ts` (single file by design —
 inspectable, diffable, verifiable). `test/engine.test.ts` replays a golden corpus
-against the same source that ships.
+(169 self-check pairs + 30 golden cases) against the same source that ships.
 
 ## Certification service (optional)
 
