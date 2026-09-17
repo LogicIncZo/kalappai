@@ -1,0 +1,280 @@
+{
+  "name": "kalappai-cert",
+  "contractVersion": 1,
+  "declaredIn": "src/contract.ts",
+  "passRules": {
+    "accuracyPercent": 90,
+    "minElapsedMs": 30000,
+    "minChars": 120,
+    "enforcedOn": "server-parsed values; a required field cannot be omitted to skip a rule"
+  },
+  "statInvariants": {
+    "netNotAboveGross": true,
+    "perfectAccuracyImpliesNoErrors": true,
+    "errorsNotAboveStrokes": true,
+    "onViolation": {
+      "status": 400,
+      "error": "implausible typing report"
+    }
+  },
+  "rateLimit": {
+    "issues": 12,
+    "windowMs": 300000,
+    "keyHeader": "x-forwarded-for"
+  },
+  "refusals": {
+    "invalidJson": {
+      "status": 400,
+      "error": "invalid json"
+    },
+    "invalidRequest": {
+      "status": 400,
+      "error": "invalid certificate request"
+    },
+    "implausibleStats": {
+      "status": 400,
+      "error": "implausible typing report"
+    },
+    "failedPassRules": {
+      "status": 422,
+      "error": "attempt does not meet pass rules"
+    },
+    "rateLimited": {
+      "status": 429,
+      "error": "rate limited"
+    },
+    "notFound": {
+      "status": 404,
+      "error": "not found"
+    }
+  },
+  "issuance": {
+    "method": "POST",
+    "path": "/api/certificates",
+    "requestRequired": [
+      "alias",
+      "layoutId",
+      "passageId",
+      "targetHash"
+    ],
+    "statsRequired": [
+      "grossWpm",
+      "netWpm",
+      "accuracy",
+      "errors",
+      "strokes",
+      "kdph",
+      "elapsedMs",
+      "chars"
+    ],
+    "responseFields": [
+      "id",
+      "issuedAt",
+      "signature",
+      "verifyPath",
+      "verifyUrl",
+      "credential",
+      "vcJwt"
+    ],
+    "successStatus": 201,
+    "targetHashPattern": "^[0-9a-f]{64}$"
+  },
+  "verification": {
+    "jsonPath": "/api/certificates/:id",
+    "humanPath": "/certs/:id",
+    "signatureProbeParam": "sig",
+    "qrTargetsSelf": true,
+    "responseFields": [
+      "certificate",
+      "signatureValid",
+      "recordSelfConsistent",
+      "signatureMatchesProvided"
+    ]
+  },
+  "credential": {
+    "spec": "W3C Verifiable Credentials 2.0",
+    "proofFormat": "JWT",
+    "alg": "EdDSA",
+    "crv": "Ed25519",
+    "kid": "kalappai-issuer-1",
+    "badgeProfile": "Open Badges 3.0",
+    "types": [
+      "VerifiableCredential",
+      "OpenBadgeCredential"
+    ],
+    "issuerPath": "/api/issuer",
+    "jwksPath": "/.well-known/jwks.json",
+    "issuerKeyPersisted": true
+  },
+  "claims": {
+    "attested": [
+      "the attempt met the server-enforced pass rules",
+      "the record has not been altered since issuance (HMAC, with a configured secret)",
+      "the score is bound to one passage via its SHA-256"
+    ],
+    "notAttested": [
+      "that the reported speed and accuracy were produced by a human at the keyboard",
+      "that the alias belongs to the person presenting the certificate",
+      "any government or examining-body qualification"
+    ],
+    "strongerEvidence": "a keystroke-evidence block, re-derived server-side (the cognizance pattern)"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "purpose": "health + service banner",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/certificates",
+      "purpose": "issue a certificate",
+      "probe": {
+        "expect": [
+          400
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/certificates/:id",
+      "purpose": "JSON verification + signatureValid",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/certs/:id",
+      "purpose": "human verify page (QR, print, VC-JWT)",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": false
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/issuer",
+      "purpose": "issuer metadata + public key",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/.well-known/jwks.json",
+      "purpose": "public key set (Ed25519)",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/cognizance/session",
+      "purpose": "open a cognizance gate session",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/cognizance/session/:id/reveal",
+      "purpose": "reveal the redacted source (issuer-counted)",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/cognizance",
+      "purpose": "submit keystroke telemetry",
+      "probe": {
+        "expect": [
+          400,
+          404,
+          422
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/cognizance/:id",
+      "purpose": "receipt verification + signatureValid",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/cognizance/gates",
+      "purpose": "gate catalogue, recall secrets redacted",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/cognizance",
+      "purpose": "the demo gate, try it in a browser",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": false
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/cognizance/r/:id",
+      "purpose": "human receipt page",
+      "probe": {
+        "expect": [
+          404
+        ],
+        "json": false
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/cognizance/limits",
+      "purpose": "what a receipt asserts and does not",
+      "probe": {
+        "expect": [
+          200
+        ],
+        "json": false
+      }
+    }
+  ]
+}
